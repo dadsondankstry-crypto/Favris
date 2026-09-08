@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RL Favoritos 2 em 1</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6c5cff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#0f1115;--card:#1c1f2b;--card2:#12141e;--text:#fff;--muted:#8b8fa3;--primary:#6c5cff;--border:#2e324a}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
+body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px}
+header{width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+h1{font-size:1.1rem}
+.btn{background:var(--primary);color:white;border:none;padding:10px 16px;border-radius:20px;font-weight:800;cursor:pointer}
+.grid{width:100%;max-width:440px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.circle-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;position:relative}
+.circle{width:78px;height:78px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 6px 18px rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.12);transition:.15s;overflow:hidden}
+.circle:active{transform:scale(.92)}
+.badge{position:absolute;top:-2px;right:8px;font-size:.6rem;background:#2a2e44;padding:2px 5px;border-radius:8px;border:1px solid var(--border)}
+.label{font-size:.72rem;text-align:center;color:var(--muted);max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.add-circle{border:2px dashed #3a3d50;background:transparent!important}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:16px;z-index:99}
+.modal.active{display:flex}
+.modal-box{background:#1e2130;width:100%;max-width:380px;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto}
+.modal-box input{width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:white;outline:none}
+.tabs-add{display:flex;background:var(--card2);border-radius:10px;padding:3px}
+.tab-add{flex:1;padding:8px;text-align:center;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;color:var(--muted)}
+.tab-add.active{background:var(--primary);color:white}
+.colors{display:flex;gap:7px;flex-wrap:wrap}
+.color-dot{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.color-dot.sel{border-color:white;transform:scale(1.1)}
+.emojis{display:flex;gap:6px;flex-wrap:wrap}
+.emoji{cursor:pointer;padding:5px 6px;border-radius:7px;border:1px solid transparent;font-size:20px}
+.emoji.sel{border-color:var(--primary);background:rgba(108,92,255,.2)}
+.hint{font-size:.78rem;color:var(--muted);text-align:center;margin-top:14px;line-height:1.4}
+.file-info{font-size:.8rem;color:var(--muted);background:var(--card2);padding:8px;border-radius:8px;word-break:break-all}
+</style>
+</head>
+<body>
+<header>
+<h1>📁 RL 2 em 1</h1>
+<button class="btn" onclick="openAdd()">＋ Novo</button>
+</header>
+
+<div class="grid" id="grid"></div>
+<p class="hint">Toque = abre<br>Segure 1s = editar / excluir<br><br>🔗 = link internet<br>📄 = arquivo local guardado dentro do app</p>
+
+<div class="modal" id="modal">
+<div class="modal-box">
+<h3 id="modalTitle">Adicionar</h3>
+
+<div class="tabs-add">
+<div class="tab-add active" id="tabLink" onclick="setMode('link')">🔗 Link Internet</div>
+<div class="tab-add" id="tabFile" onclick="setMode('file')">📄 Arquivo Local</div>
+</div>
+
+<!-- MODO LINK -->
+<div id="modeLink">
+<input id="fNameLink" placeholder="Nome: Ex: Cardápio Criança">
+<input id="fUrl" placeholder="Cole o RL / link: https://..." inputmode="url">
+</div>
+
+<!-- MODO ARQUIVO -->
+<div id="modeFile" style="display:none">
+<input type="file" id="fileInput" accept=".html,.htm,.txt,.pdf" style="padding:12px">
+<div id="fileInfo" class="file-info" style="display:none"></div>
+<input id="fNameFile" placeholder="Nome do atalho: Ex: MultiLang Pro">
+</div>
+
+<div><div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">Cor:</div><div class="colors" id="colorPicker"></div></div>
+<div><div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">Ícone:</div><div class="emojis" id="emojiPicker"></div></div>
+
+<div style="display:flex;gap:8px">
+<button style="flex:1;padding:11px;border-radius:10px;border:none;background:#2a2e44;color:white;cursor:pointer" onclick="closeModal()">Cancelar</button>
+<button style="flex:1;padding:11px;border-radius:10px;border:none;background:var(--primary);color:white;font-weight:800;cursor:pointer" onclick="saveFav()">Salvar Círculo</button>
+</div>
+<div id="delArea" style="display:none"><button style="width:100%;padding:10px;border-radius:10px;border:none;background:#ff3b5c;color:white;cursor:pointer" onclick="deleteFav()">🗑️ Excluir</button></div>
+</div>
+</div>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(err => console.log('SW register failed:', err));
+}
+const COLORS=["#6c5cff","#ff6b6b","#4ecdc4","#ffd93d","#6bcf7f","#ff8fab","#48cae4","#ff9e00","#a78bfa","#2b2e44"];
+const EMOJIS=["🔗","🍔","👶","🍕","🍟","🥤","🍰","📋","⭐","❤️","🍝","☕","📚","🇺🇸","🇩🇪","🇮🇹","🇪🇸","🇫🇷","🇧🇷","📄","💾","🧠"];
+let favs=JSON.parse(localStorage.getItem('rl_2em1_v3')||'[]');
+let editingId=null, selColor=COLORS[0], selEmoji="🔗", currentMode='link';
+let pendingContent=null, pendingFileName="", pendingSize=0;
+let pressTimer=null;
+
+function init(){renderColors();renderEmojis();renderGrid();}
+function setMode(m){
+ currentMode=m;
+ document.getElementById('tabLink').classList.toggle('active',m==='link');
+ document.getElementById('tabFile').classList.toggle('active',m==='file');
+ document.getElementById('modeLink').style.display=m==='link'?'block':'none';
+ document.getElementById('modeFile').style.display=m==='file'?'block':'none';
+}
+function renderColors(){const c=document.getElementById('colorPicker');c.innerHTML='';COLORS.forEach(col=>{let d=document.createElement('div');d.className='color-dot'+(col===selColor?' sel':'');d.style.background=col;d.onclick=()=>{selColor=col;renderColors();};c.appendChild(d);});}
+function renderEmojis(){const c=document.getElementById('emojiPicker');c.innerHTML='';EMOJIS.forEach(em=>{let d=document.createElement('div');d.className='emoji'+(em===selEmoji?' sel':'');d.textContent=em;d.onclick=()=>{selEmoji=em;renderEmojis();};c.appendChild(d);});}
+function renderGrid(){
+ const g=document.getElementById('grid');g.innerHTML='';
+ favs.forEach(f=>{
+  let item=document.createElement('div');item.className='circle-item';
+  let circle=document.createElement('div');circle.className='circle';circle.style.background=f.color;circle.textContent=f.emoji;
+  circle.onclick=()=>openFav(f.id);
+  let start=()=>{pressTimer=setTimeout(()=>openEdit(f.id),650);}; let cancel=()=>clearTimeout(pressTimer);
+  circle.addEventListener('touchstart',start);circle.addEventListener('touchend',cancel);
+  circle.addEventListener('mousedown',start);circle.addEventListener('mouseup',cancel);circle.addEventListener('mouseleave',cancel);
+  let label=document.createElement('div');label.className='label';label.textContent=f.name;
+  let badge=document.createElement('div');badge.className='badge';badge.textContent=f.type==='file'?'📄':'🔗';
+  item.appendChild(circle);item.appendChild(badge);item.appendChild(label);g.appendChild(item);
+ });
+ let add=document.createElement('div');add.className='circle-item';add.onclick=openAdd;
+ let ac=document.createElement('div');ac.className='circle add-circle';ac.textContent='＋';
+ let al=document.createElement('div');al.className='label';al.textContent='Adicionar';
+ add.appendChild(ac);add.appendChild(al);g.appendChild(add);
+}
+function openAdd(){
+ editingId=null;pendingContent=null;pendingFileName="";
+ document.getElementById('fNameLink').value='';document.getElementById('fNameFile').value='';
+ document.getElementById('fUrl').value='';document.getElementById('fileInput').value='';
+ document.getElementById('fileInfo').style.display='none';setMode('link');
+ selColor=COLORS[0];selEmoji="🔗";renderColors();renderEmojis();
+ document.getElementById('modalTitle').textContent='Novo Círculo 2 em 1';
+ document.getElementById('delArea').style.display='none';
+ document.getElementById('modal').classList.add('active');
+}
+function openEdit(id){
+ let f=favs.find(x=>x.id===id);if(!f) return;editingId=id;
+ if(f.type==='file'){
+  setMode('file');pendingContent=f.content;pendingFileName=f.originalName||'';pendingSize=f.sizeKB||0;
+  document.getElementById('fNameFile').value=f.name;
+  document.getElementById('fileInfo').style.display='block';
+  document.getElementById('fileInfo').textContent='Arquivo salvo: '+(f.originalName||'')+' ('+(f.sizeKB||'')+' KB) ✓';
+ }else{
+  setMode('link');document.getElementById('fNameLink').value=f.name;document.getElementById('fUrl').value=f.url;
+ }
+ selColor=f.color;selEmoji=f.emoji;renderColors();renderEmojis();
+ document.getElementById('modalTitle').textContent='Editar Círculo';
+ document.getElementById('delArea').style.display='block';
+ document.getElementById('modal').classList.add('active');
+}
+function closeModal(){document.getElementById('modal').classList.remove('active');}
+
+document.getElementById('fileInput').addEventListener('change',e=>{
+ let file=e.target.files[0];if(!file) return;
+ pendingFileName=file.name;pendingSize=Math.round(file.size/1024);
+ document.getElementById('fileInfo').style.display='block';
+ document.getElementById('fileInfo').textContent='Lendo: '+file.name+' ('+pendingSize+' KB)...';
+ let reader=new FileReader();
+ reader.onload=ev=>{
+  pendingContent=ev.target.result;
+  document.getElementById('fileInfo').textContent='Pronto: '+file.name+' ✓ ('+pendingSize+' KB)';
+  if(!document.getElementById('fNameFile').value){
+   document.getElementById('fNameFile').value=file.name.replace(/\.[^/.]+$/,'');
+  }
+ };
+ reader.readAsText(file);
+});
+
+function saveFav(){
+ if(currentMode==='link'){
+  let name=document.getElementById('fNameLink').value.trim();
+  let url=document.getElementById('fUrl').value.trim();
+  if(!name) return alert('Coloca um nome'); if(!url) return alert('Cola o link');
+  if(!url.startsWith('http')) url='https://'+url;
+  if(editingId){let f=favs.find(x=>x.id===editingId);Object.assign(f,{name,url,color:selColor,emoji:selEmoji,type:'link'});}
+  else{favs.push({id:Date.now(),name,url,color:selColor,emoji:selEmoji,type:'link'});}
+ }else{
+  let name=document.getElementById('fNameFile').value.trim();
+  if(!pendingContent) return alert('Escolha um arquivo primeiro!'); if(!name) return alert('Coloca nome pro círculo');
+  if(editingId){let f=favs.find(x=>x.id===editingId);Object.assign(f,{name,content:pendingContent,originalName:pendingFileName,sizeKB:pendingSize,color:selColor,emoji:selEmoji,type:'file'});}
+  else{favs.push({id:Date.now(),name,content:pendingContent,originalName:pendingFileName,sizeKB:pendingSize,color:selColor,emoji:selEmoji,type:'file'});}
+ }
+ localStorage.setItem('rl_2em1_v3',JSON.stringify(favs));closeModal();renderGrid();
+}
+function deleteFav(){if(!confirm('Excluir esse círculo?')) return;favs=favs.filter(x=>x.id!==editingId);localStorage.setItem('rl_2em1_v3',JSON.stringify(favs));closeModal();renderGrid();}
+function openFav(id){
+ let f=favs.find(x=>x.id===id);if(!f) return;
+ if(f.type==='link'){window.open(f.url,'_blank');}
+ else{
+  let blob=new Blob([f.content],{type:'text/html'});
+  let url=URL.createObjectURL(blob);
+  window.open(url,'_blank');
+ }
+}
+init();
+</script>
+</body>
+</html>

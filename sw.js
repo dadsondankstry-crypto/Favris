@@ -1,4 +1,4 @@
-const CACHE = 'rl-2em1-v4';
+const CACHE = 'rl-2em1-v5';
 const FILES = [
   './',
   './index.html',
@@ -11,7 +11,7 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(c => {
       return Promise.all(
-        FILES.map(file => c.add(file).catch(err => console.warn('Erro ao salvar no cache:', file, err)))
+        FILES.map(file => c.add(file).catch(err => console.warn('Falha ao cachear:', file, err)))
       );
     })
   );
@@ -31,6 +31,14 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    caches.match(e.request, { ignoreSearch: true }).then(cached => {
+      if (cached) return cached;
+
+      return fetch(e.request).catch(() => {
+        if (e.request.mode === 'navigate') {
+          return caches.match('./index.html') || caches.match('./');
+        }
+      });
+    })
   );
 });
